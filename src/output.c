@@ -27,13 +27,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "output.h"
 #include "common.h"
 
-// Defines
-
-#define xmalloc(x) malloc(x)
-
-
-// structs / typdefs
-
 extern format_e format;
 
 PEV_OUTPUT_SECTOR * get_last_sector(PEV_OUTPUT_SECTOR *sector)
@@ -139,29 +132,52 @@ void dump_output_text(PEV_OUTPUT_SECTOR *sector)
 
     PEV_OUTPUT_SECTOR *current = sector;
 
-    printf("Output:\n\n");
-
     while (current != NULL)
     {
-        printf("Sector: %s\n", current->title);
+        printf("%s\n", current->title);
 
         PEV_OUTPUT_LINE *current_line = current->firstLine;
 
         while (current_line != NULL)
         {
 
-            printf("\tLine: %s => %s\n", current_line->key, current_line->value);
+            printf("\t%s: %s\n", current_line->key, current_line->value);
             current_line = current_line->next;
 
         }//end :: while
 
-        printf("End of %s\n\n", current->title);
+        printf("\n");
+
         current = current->next;
     }//end :: while
 
-    printf("Dump finished.\n");
-
 }//end :: dump_output_text
+
+// CSV
+
+void dump_output_csv(PEV_OUTPUT_SECTOR *sector)
+{
+
+    PEV_OUTPUT_SECTOR *current = sector;
+
+    while (current != NULL)
+    {
+        PEV_OUTPUT_LINE *current_line = current->firstLine;
+
+        while (current_line != NULL)
+        {
+
+            printf("\"%s\",\"%s\",\"%s\"\n", current->title, current_line->key, current_line->value);
+            current_line = current_line->next;
+
+        }//end :: while
+
+        current = current->next;
+    }//end :: while
+
+
+
+}//end :: dump_output_sector
 
 // HTML FUNCTIONS
 
@@ -306,6 +322,9 @@ void dump_output(PEV_OUTPUT_SECTOR *sector)
     {
         case FORMAT_XML:
             dump_output_xml(sector);
+            break;
+        case FORMAT_CSV:
+            dump_output_csv(sector);
             break;
         case FORMAT_HTML:
             dump_output_html(sector);

@@ -80,6 +80,7 @@ PEV_OUTPUT_LINE add_line(char *key, char *value, PEV_OUTPUT_SECTOR *sector);
 void dump_output_text(PEV_OUTPUT_SECTOR *sector);
 void dump_output_html(PEV_OUTPUT_SECTOR *sector);
 void dump_output_xml(PEV_OUTPUT_SECTOR *sector);
+void dump_output_csv(PEV_OUTPUT_SECTOR *sector);
 void dump_output(PEV_OUTPUT_SECTOR *sector);
 
 // Util Functions

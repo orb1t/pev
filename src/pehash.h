@@ -35,6 +35,7 @@ void parse_hash_algorithm(const char *optarg);
 
 // Algorithms
 void calc_md5(FILE *fp, char *md5sum);
+void calc_sha1(FILE *fp, char *sha1sum);
 void calc_sha256(FILE *fp, char *sha265sum);
 
 // Structs

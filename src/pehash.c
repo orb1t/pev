@@ -140,6 +140,13 @@ int main(int argc, char *argv[])
         add_line("SHA256 Signature", sha256_sum, outSectorSignatures);
     }//end :: if
 
+    if (true == config.all || true == config.sha1) {
+        char sha1_sum[((SHA_DIGEST_LENGTH*2)+1)];
+        calc_sha1(fp, sha1_sum);
+    
+        add_line("SHA1 Signature", sha1_sum, outSectorSignatures);
+    }//end :: if
+
     fclose (fp);
 
     dump_output(output);
@@ -147,6 +154,33 @@ int main(int argc, char *argv[])
     return 0;
 
 }//end :: main
+
+void calc_sha1(FILE *fp, char *sha1sum)
+{
+
+    if (fp == NULL) EXIT_ERROR("file not found or unreadable");
+    rewind(fp);
+
+    unsigned char hash[SHA_DIGEST_LENGTH];
+
+    SHA_CTX mdContext;
+
+    size_t bytes;
+    unsigned char data[1024];
+
+    SHA1_Init(&mdContext);
+
+    while ((bytes = fread (data, 1, 1024, fp)) != 0)
+        SHA1_Update (&mdContext, data, bytes);
+
+    SHA1_Final(hash, &mdContext);
+
+    unsigned int i;
+    for(i = 0; i < SHA_DIGEST_LENGTH; i++) sprintf(&sha1sum[i*2], "%02x", hash[i]);
+
+
+}//end :: calc_sha1
+
 
 void calc_sha256(FILE *fp, char *sha256sum)
 {

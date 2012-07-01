@@ -334,9 +334,10 @@ void dump_output(PEV_OUTPUT_SECTOR *sector)
             dump_output_text(sector);
     }//end :: switch
 
+    free_output(sector);
+
 }//end :: dump_output
 
-/*
 void free_output(PEV_OUTPUT_SECTOR *sector) 
 {
 
@@ -350,13 +351,20 @@ void free_output(PEV_OUTPUT_SECTOR *sector)
         while (current_line != NULL)
         {
 
+            PEV_OUTPUT_LINE *temp_line;
+            temp_line = current_line;
+
             current_line = current_line->next;
 
-        }//end :: while
+            free(temp_line);
 
+        }//end :: while
+        
+        PEV_OUTPUT_SECTOR *temp_sector;
+        temp_sector = current;
         current = current->next;
+        free(temp_sector);
     }//end :: while
 
 
 }//end :: free_output
-*/

@@ -84,6 +84,7 @@ void dump_output_csv(PEV_OUTPUT_SECTOR *sector);
 void dump_output(PEV_OUTPUT_SECTOR *sector);
 
 // Util Functions
+void free_output(PEV_OUTPUT_SECTOR *sector);
 void parse_format(const char *optarg);
 char * slugify(char *string);
 

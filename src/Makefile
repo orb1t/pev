@@ -13,7 +13,7 @@ INSTALL=install -m 0755
 all: $(PROGS)
 
 pehash: pehash.c
-	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -lpe -lssl -lcrypto 
+	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -g3 -lpe -lssl -lcrypto 
 
 # special rule to include libudis86
 pedis: pedis.c

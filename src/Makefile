@@ -12,6 +12,9 @@ INSTALL=install -m 0755
 # 'make' only will compile all binaries
 all: $(PROGS)
 
+pehash: pehash.c
+	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) $^ $(COMMON) -o $@ -lpe -lssl -lcrypto 
+
 # special rule to include libudis86
 pedis: pedis.c
 	$(CC) $(CFLAGS) -I$(LIBPE) -L$(LIBPE) -I$(LIBUDIS86) $(LIBUDIS86)/libudis86/*.c $^ $(COMMON) -o $@ -lpe

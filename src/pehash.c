@@ -124,25 +124,25 @@ int main(int argc, char *argv[])
     if ((fp = fopen(argv[argc-1], "rb")) == NULL)
         EXIT_ERROR("file not found or unreadable");
 
-    PEV_OUTPUT_SECTOR *outSectorSignatures = add_sector("File cryptographic signatures", &output);
+    PEV_OUTPUT_SECTOR *outSectorSignatures = add_sector("Cryptographic signatures", &output);
 
     if (true == config.all || true == config.md5) {
         char md5_sum[((MD5_DIGEST_LENGTH*2)+1)];
-        calc_md5(fp, md5_sum);
+        calc_file_md5(fp, md5_sum);
     
         add_line("MD5 Signature", md5_sum, outSectorSignatures);
     }//end :: if
 
     if (true == config.all || true == config.sha256) {
         char sha256_sum[((SHA256_DIGEST_LENGTH*2)+1)];
-        calc_sha256(fp, sha256_sum);
+        calc_file_sha256(fp, sha256_sum);
     
         add_line("SHA256 Signature", sha256_sum, outSectorSignatures);
     }//end :: if
 
     if (true == config.all || true == config.sha1) {
         char sha1_sum[((SHA_DIGEST_LENGTH*2)+1)];
-        calc_sha1(fp, sha1_sum);
+        calc_file_sha1(fp, sha1_sum);
     
         add_line("SHA1 Signature", sha1_sum, outSectorSignatures);
     }//end :: if
@@ -155,7 +155,7 @@ int main(int argc, char *argv[])
 
 }//end :: main
 
-void calc_sha1(FILE *fp, char *sha1sum)
+void calc_file_sha1(FILE *fp, char *sha1sum)
 {
 
     if (fp == NULL) EXIT_ERROR("file not found or unreadable");
@@ -179,10 +179,10 @@ void calc_sha1(FILE *fp, char *sha1sum)
     for(i = 0; i < SHA_DIGEST_LENGTH; i++) sprintf(&sha1sum[i*2], "%02x", hash[i]);
 
 
-}//end :: calc_sha1
+}//end :: calc_file_sha1
 
 
-void calc_sha256(FILE *fp, char *sha256sum)
+void calc_file_sha256(FILE *fp, char *sha256sum)
 {
 
     if (fp == NULL) EXIT_ERROR("file not found or unreadable");
@@ -206,9 +206,9 @@ void calc_sha256(FILE *fp, char *sha256sum)
     for(i = 0; i < SHA256_DIGEST_LENGTH; i++) sprintf(&sha256sum[i*2], "%02x", hash[i]);
 
 
-}//end :: calc_sha256
+}//end :: calc_file_sha256
 
-void calc_md5(FILE *fp, char *md5sum)
+void calc_file_md5(FILE *fp, char *md5sum)
 {
 
     if (fp == NULL) EXIT_ERROR("file not found or unreadable");
@@ -232,4 +232,4 @@ void calc_md5(FILE *fp, char *md5sum)
     unsigned int i;
     for(i = 0; i < MD5_DIGEST_LENGTH; i++) sprintf(&md5sum[i*2], "%02x", hash[i]);
 
-}//end :: calc_md5
+}//end :: calc_file_md5

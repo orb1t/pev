@@ -29,6 +29,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 extern format_e format;
 
+//************** SECTOR/LINE MANAGEMENT
+
 PEV_OUTPUT_SECTOR * get_last_sector(PEV_OUTPUT_SECTOR *sector)
 {
 
@@ -50,6 +52,18 @@ PEV_OUTPUT_SECTOR * get_last_sector(PEV_OUTPUT_SECTOR *sector)
 
 }//end :: get_last_sector
 
+PEV_OUTPUT_SECTOR * add_child_sector(char *name, PEV_OUTPUT_SECTOR ** currentSector)
+{
+
+    PEV_OUTPUT_SECTOR *sector;
+
+    sector = add_sector(name, &((*currentSector)->child));
+    sector->parent = *currentSector;
+
+    return sector;
+
+}//end :: add_child_sector
+
 PEV_OUTPUT_SECTOR * add_sector(char *name, PEV_OUTPUT_SECTOR ** currentSector)
 {
 
@@ -60,6 +74,8 @@ PEV_OUTPUT_SECTOR * add_sector(char *name, PEV_OUTPUT_SECTOR ** currentSector)
     strncpy(sector->title, name, TITLE_MAX_LEN);
 
     sector->firstLine = NULL;
+    sector->child = NULL;
+    sector->parent = NULL;
 
     PEV_OUTPUT_SECTOR *lastSector;
     lastSector =  (PEV_OUTPUT_SECTOR *) get_last_sector(*currentSector);
@@ -127,37 +143,107 @@ PEV_OUTPUT_LINE add_line(char *key, char *value, PEV_OUTPUT_SECTOR *sector)
 
 }//end :: add_line
 
-void dump_output_text(PEV_OUTPUT_SECTOR *sector) 
+//************** TEXT OUTPUT
+
+void dump_output_sector_text(PEV_OUTPUT_SECTOR *sector, unsigned int depth) 
 {
 
     PEV_OUTPUT_SECTOR *current = sector;
 
+    char *tabs = create_tabs(depth);
+
     while (current != NULL)
     {
-        printf("%s\n", current->title);
+        printf("%s%s\n", tabs, current->title);
 
         PEV_OUTPUT_LINE *current_line = current->firstLine;
 
         while (current_line != NULL)
         {
 
-            printf("\t%s: %s\n", current_line->key, current_line->value);
+            printf("%s\t%s: %s\n", tabs, current_line->key, current_line->value);
             current_line = current_line->next;
 
         }//end :: while
 
         printf("\n");
 
+        if (current->child != NULL) dump_output_sector_text(current->child, ++depth); // Print child by recursion
+
         current = current->next;
     }//end :: while
 
-}//end :: dump_output_text
+    free(tabs);
 
-// CSV
+}//end :: dump_output_sector_text
 
-void dump_output_csv(PEV_OUTPUT_SECTOR *sector)
+void dump_output_text(PEV_OUTPUT_SECTOR *sector) 
 {
 
+    dump_output_sector_text(sector, 0);
+
+}//end :: dump_output_text
+
+//************** JSON OUTPUT
+
+void dump_output_sector_json(PEV_OUTPUT_SECTOR *sector, unsigned int depth)
+{
+
+    PEV_OUTPUT_SECTOR *current = sector;
+
+    char *tabs = create_tabs((depth+1));
+
+    while (current != NULL)
+    {
+        PEV_OUTPUT_LINE *current_line = current->firstLine;
+
+        char sector_slug[TITLE_MAX_LEN];
+
+        strncpy(sector_slug, current->title, TITLE_MAX_LEN);
+        slugify(sector_slug);
+
+        printf("%s\"%s\":\n", tabs, sector_slug);
+        printf("%s{\n", tabs);
+
+        while (current_line != NULL)
+        {
+
+            printf("%s\t\"%s\": \"%s\"", tabs, slugify(current_line->key), current_line->value);
+            if (NULL != current_line->next) printf(",");
+            printf("\n");
+            current_line = current_line->next;
+
+        }//end :: while
+
+        if (current->child != NULL) dump_output_sector_json(current->child, ++depth); // Print child by recursion
+
+        printf("%s}", tabs);
+        if (NULL != current->next) printf(",");
+        printf("\n");
+
+        current = current->next;
+    }//end :: while
+
+    free(tabs);
+
+}//end :: dump_output_sector_json
+
+void dump_output_json(PEV_OUTPUT_SECTOR *sector)
+{
+
+    printf("{\n");
+
+    dump_output_sector_json(sector, 0);
+
+    printf("}\n");
+
+}//end :: dump_output_json
+
+
+//************** CSV OUTPUT
+
+void dump_output_sector_csv(PEV_OUTPUT_SECTOR *sector, unsigned int depth)
+{
     PEV_OUTPUT_SECTOR *current = sector;
 
     while (current != NULL)
@@ -172,19 +258,25 @@ void dump_output_csv(PEV_OUTPUT_SECTOR *sector)
 
         }//end :: while
 
+        if (current->child != NULL) dump_output_sector_csv(current->child, ++depth); // Print child by recursion
+
         current = current->next;
     }//end :: while
+}//end :: dump_output_sector_csv
 
+void dump_output_csv(PEV_OUTPUT_SECTOR *sector)
+{
 
+    dump_output_sector_csv(sector, 0);
 
-}//end :: dump_output_sector
+}//end :: dump_output_csv
 
-// HTML FUNCTIONS
+//************** HTML OUTPUT
 
 void html_print_header()
 {
 
-    printf(HTML_HEAD, "sampleprog.txt", "2010-11-12");
+    printf(HTML_HEAD);
     printf("\t<h1>PEV Output</h1>\n");
 
 }//end :: html_print_header
@@ -196,57 +288,69 @@ void html_print_footer()
 
 }//end :: html_print_footer
 
-char * slugify(char *string)
+void dump_output_sector_html(PEV_OUTPUT_SECTOR *sector, unsigned int depth)
 {
-
-    char *cp;
-    cp = string;
-
-    while (*cp) {
-        if (64 < *cp && 91 > *cp) *cp = *cp+32;
-        if (32 == *cp) *cp = '_';
-        if ('(' == *cp || ')' == *cp || '/' == *cp || '\\' == *cp || '.' == *cp) *cp = '_';
-
-        cp++;
-    }//end :: while
-    return string;
-
-}//end :: slugify
-
-void dump_output_html(PEV_OUTPUT_SECTOR *sector)
-{
-
 
     PEV_OUTPUT_SECTOR *current = sector;
 
-    html_print_header();
+    unsigned short int header_type;
+    unsigned int row_count;
+    char css_class[4];
+
+    header_type = (depth+2);
+
+    if (header_type > 5) header_type = 5; // h5 is the last header level available
 
     while (NULL != current) {
-        printf("\t<h2>%s</h2>\n", current->title);
+        printf("\t<h%d>%s</h%d>\n", header_type, current->title, header_type);
 
         PEV_OUTPUT_LINE *current_line = current->firstLine;
 
         printf("\t<dl>\n");
 
+        row_count = 0;
+
         while (current_line != NULL)
         {
 
-            printf("\t\t<dt>%s</dt>\n", current_line->key);
-            printf("\t\t<dd>%s</dd>\n", current_line->value);
+            if ( row_count % 2 == 0 ) 
+            {
+                snprintf(css_class, 5, "even");
+            } else {
+                snprintf(css_class, 4, "odd");
+            }//end :: if
+
+            printf("\t\t<dt class=\"%s\">%s</dt>\n", css_class, current_line->key);
+            printf("\t\t<dd class=\"%s\">%s</dd>\n", css_class, current_line->value);
             current_line = current_line->next;
+
+            row_count++;
 
         }//end :: while
 
         printf("\t</dl>\n");
 
+        if (current->child != NULL) dump_output_sector_html(current->child, ++depth); // Print child by recursion
+
         current = current->next;
     }//end :: while
+
+
+}//end :: dump_output_sector_html
+
+void dump_output_html(PEV_OUTPUT_SECTOR *sector)
+{
+
+
+    html_print_header();
+
+    dump_output_sector_html(sector, 0);
 
     html_print_footer();
 
 }//end :: dump_output_html
 
-// XML Functions
+//************** XML OUTPUT
 
 void xml_print_header()
 {
@@ -262,14 +366,12 @@ void xml_print_footer()
 
 }//end :: xml_print_footer
 
-
-void dump_output_xml(PEV_OUTPUT_SECTOR *sector)
+void dump_output_sector_xml(PEV_OUTPUT_SECTOR *sector, unsigned int depth)
 {
-
 
     PEV_OUTPUT_SECTOR *current = sector;
 
-    xml_print_header();
+    char *tabs = create_tabs((depth+1));
 
     while (NULL != current) {
 
@@ -278,32 +380,52 @@ void dump_output_xml(PEV_OUTPUT_SECTOR *sector)
         strncpy(sector_slug, current->title, TITLE_MAX_LEN);
         slugify(sector_slug);
 
-        printf("\t<%s title=\"%s\">\n", sector_slug, current->title);
+        printf("%s<%s title=\"%s\">\n", tabs, sector_slug, current->title);
 
         PEV_OUTPUT_LINE *current_line = current->firstLine;
 
         while (current_line != NULL)
         {
 
-            printf("\t\t<%s>%s</%s>\n", slugify(current_line->key), current_line->value, slugify(current_line->key));
+            printf("%s\t<%s>%s</%s>\n", tabs, slugify(current_line->key), current_line->value, slugify(current_line->key));
             current_line = current_line->next;
 
         }//end :: while
 
-        printf("\t</%s>\n", slugify(current->title));
+
+        if (current->child != NULL) dump_output_sector_xml(current->child, ++depth); // Print child by recursion
+
+        printf("%s</%s>\n", tabs, slugify(current->title));
 
         current = current->next;
     }//end :: while
 
+    free(tabs); // cleanup!
+
+}//end :: dump_output_sector_xml
+
+void dump_output_xml(PEV_OUTPUT_SECTOR *sector)
+{
+
+
+    xml_print_header();
+
+    dump_output_sector_xml(sector, 0);
+
     xml_print_footer();
 
 }//end :: dump_output_xml
+
+
+//************** UTIL FUNCTIONS
 
 void parse_format(const char *optarg)
 {
 
     if (! strcmp(optarg, "text"))
         format = FORMAT_TEXT;
+    else if (! strcmp(optarg, "json"))
+        format = FORMAT_JSON;
     else if (! strcmp(optarg, "xml"))
         format = FORMAT_XML;
     else if (! strcmp(optarg, "csv"))
@@ -325,6 +447,9 @@ void dump_output(PEV_OUTPUT_SECTOR *sector)
             break;
         case FORMAT_CSV:
             dump_output_csv(sector);
+            break;
+        case FORMAT_JSON:
+            dump_output_json(sector);
             break;
         case FORMAT_HTML:
             dump_output_html(sector);
@@ -359,6 +484,8 @@ void free_output(PEV_OUTPUT_SECTOR *sector)
             free(temp_line);
 
         }//end :: while
+
+        if (current->child != NULL) free_output(current->child); // Clear child nodes via recursion
         
         PEV_OUTPUT_SECTOR *temp_sector;
         temp_sector = current;
@@ -368,3 +495,40 @@ void free_output(PEV_OUTPUT_SECTOR *sector)
 
 
 }//end :: free_output
+
+char * create_tabs(unsigned int count)
+{
+
+    char *tabs;
+
+    if (count > 0)
+    {
+        tabs = xmalloc(sizeof(char)*count);
+    } else {
+        tabs = xmalloc(sizeof(char));
+    }
+
+    tabs[0] = '\0';
+
+    for (unsigned int i = 0; i<count; i++) tabs[i] = '\t';
+
+    return tabs;
+
+}//end :: create_tabs
+
+char * slugify(char *string)
+{
+
+    char *cp;
+    cp = string;
+
+    while (*cp) {
+        if (64 < *cp && 91 > *cp) *cp = *cp+32;
+        if (32 == *cp) *cp = '_';
+        if ('(' == *cp || ')' == *cp || '/' == *cp || '\\' == *cp || '.' == *cp) *cp = '_';
+
+        cp++;
+    }//end :: while
+    return string;
+
+}//end :: slugify

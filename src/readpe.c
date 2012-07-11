@@ -174,27 +174,30 @@ void print_sections(PE_FILE *pe)
 
 	for (i=0; i < pe->num_sections; i++)
 	{
+
+        PEV_OUTPUT_SECTOR *outSubSectSection = add_child_sector("Section", &outSectorSections);
+
 		snprintf(s, MAX_MSG, "%s", pe->sections_ptr[i]->Name);
-		add_line("Name", s, outSectorSections);
+		add_line("Name", s, outSubSectSection);
 
 		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->VirtualAddress);
-		add_line("Virtual Address", s, outSectorSections);
+		add_line("Virtual Address", s, outSubSectSection);
 
 		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Misc.PhysicalAddress);
-		add_line("Physical Address", s, outSectorSections);
+		add_line("Physical Address", s, outSubSectSection);
 
 		snprintf(s, MAX_MSG, "%#x (%d bytes)", pe->sections_ptr[i]->SizeOfRawData,
 		pe->sections_ptr[i]->SizeOfRawData);
-		add_line("Size", s, outSectorSections);
+		add_line("Size", s, outSubSectSection);
 
 		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->PointerToRawData);
-		add_line("Pointer To Data", s, outSectorSections);
+		add_line("Pointer To Data", s, outSubSectSection);
 
 		snprintf(s, MAX_MSG, "%d", pe->sections_ptr[i]->NumberOfRelocations);
-		add_line("Relocations", s, outSectorSections);
+		add_line("Relocations", s, outSubSectSection);
 
 		snprintf(s, MAX_MSG, "%#x", pe->sections_ptr[i]->Characteristics);
-		add_line("Characteristics", s, outSectorSections);
+		add_line("Characteristics", s, outSubSectSection);
 
 		for (j=0; j < sizeof(valid_flags) / sizeof(unsigned int); j++)
 		{
